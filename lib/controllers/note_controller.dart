@@ -27,7 +27,10 @@ class NoteController extends GetxController {
   void togglePin(String id) {
     final index = notes.indexWhere((note) => note.id == id);
     if (index != -1) {
-      notes[index].isPinned = !notes[index].isPinned;
+     notes[index] = notes[index].copyWith(
+  isPinned: !notes[index].isPinned,
+);
+
       notes.sort((a, b) {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;

@@ -1,18 +1,23 @@
+import 'package:app_note/theme.dart';
+import 'package:app_note/views/home_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'routes/app_pages.dart';
-
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Notes App',
-      initialRoute: '/',
-      getPages: AppPages.routes,
+    title: 'Keep Note',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system, // Or ThemeMode.light / dark
+      home:  HomeView(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

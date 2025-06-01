@@ -10,12 +10,11 @@ class AddNoteView extends StatelessWidget {
   final TextEditingController contentController = TextEditingController();
   final Note? noteToEdit;
 
-  // Constructor to optionally pass an existing note
-  AddNoteView({Key? key, this.noteToEdit}) : super(key: key);
+  AddNoteView({super.key, this.noteToEdit});
 
   @override
   Widget build(BuildContext context) {
-    // Pre-fill controllers with existing note data if editing
+    // Pre-fill if editing
     if (noteToEdit != null) {
       titleController.text = noteToEdit!.title;
       contentController.text = noteToEdit!.content;
@@ -23,35 +22,76 @@ class AddNoteView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(noteToEdit == null ? 'Add Note' : 'Edit Note'),
+        title: Text(
+          noteToEdit == null ? 'Add Note' : 'Edit Note',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            TextField(
-              controller: titleController,
-              decoration: InputDecoration(labelText: 'Title'),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: titleController,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
+                      hintText: 'Title',
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: contentController,
+                    maxLines: 10,
+                    decoration: InputDecoration(
+                      hintText: 'Start typing your note...',
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.all(16),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            TextField(
-              controller: contentController,
-              decoration: InputDecoration(labelText: 'Content'),
-              maxLines: 5,
-            ),
-            SizedBox(height: 20),
+            const SizedBox(height: 30),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              ),
               onPressed: () {
                 if (noteToEdit == null) {
-                  // Add new note
                   final note = Note(
-                    id: Uuid().v4(),
+                    id: const Uuid().v4(),
                     title: titleController.text,
                     content: contentController.text,
                     createdAt: DateTime.now(),
                   );
                   noteController.addNote(note);
                 } else {
-                  // Edit existing note
                   noteController.updateNote(
                     noteToEdit!.id,
                     titleController.text,
@@ -60,7 +100,10 @@ class AddNoteView extends StatelessWidget {
                 }
                 Get.back();
               },
-              child: Text(noteToEdit == null ? 'Save Note' : 'Update Note'),
+              child: Text(
+                noteToEdit == null ? 'Save Note' : 'Update Note',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),

@@ -1,162 +1,146 @@
+import 'package:app_note/controllers/note_controller.dart';
+import 'package:app_note/models/note.dart';
 import 'package:app_note/views/note_view.dart';
-import 'package:app_note/views/search_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/note_controller.dart';
 
 class HomeView extends StatelessWidget {
   final NoteController noteController = Get.put(NoteController());
 
-  // Variable to hold the current view type (ListView or GridView)
-  var isGridView = false.obs;
-
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Notes'),
-        actions: [
-          // View toggle button
-          Obx(
-            () => IconButton(
-              icon: Icon(
-                isGridView.value ? Icons.view_list : Icons.grid_view,
+      backgroundColor: backgroundColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              // App Bar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Keep Note",
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+             //    const CircleAvatar(
+                  //   radius: 18,
+                  //   backgroundImage: AssetImage('assets/avatar.png'),
+              //     ),
+                ],
               ),
-              onPressed: () {
-                // Toggle between grid and list view
-                isGridView.value = !isGridView.value;
-              },
-            ),
-          ),
-          // Search Icon Button
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {
-              // Show search bar when clicked
-              showSearch(context: context, delegate: NotesSearchDelegate());
-            },
-          ),
-          // Sorting Dropdown
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              // Handle sorting based on the selected value
-              switch (value) {
-                case 'Alphabetical Ascending':
-                  noteController.sortByTitleAsc();
-                  break;
-                case 'Alphabetical Descending':
-                  noteController.sortByTitleDesc();
-                  break;
-                case 'Date Ascending':
-                  noteController.sortByDateAsc();
-                  break;
-                case 'Date Descending':
-                  noteController.sortByDateDesc();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'Alphabetical Ascending',
-                child: Text('Alphabetical Ascending'),
+              const SizedBox(height: 20),
+
+              // Search Bar
+              TextField(
+                decoration: InputDecoration(
+                  hintText: "Search note...",
+                  prefixIcon: Icon(Icons.search),
+                  filled: true,
+                  fillColor: isDark ? Colors.grey[800] : Colors.grey[100],
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
               ),
-              PopupMenuItem(
-                value: 'Alphabetical Descending',
-                child: Text('Alphabetical Descending'),
-              ),
-              PopupMenuItem(
-                value: 'Date Ascending',
-                child: Text('Date Ascending'),
-              ),
-              PopupMenuItem(
-                value: 'Date Descending',
-                child: Text('Date Descending'),
+              const SizedBox(height: 20),
+
+              // Notes Grid
+              Expanded(
+                child: Obx(() {
+                  final notes = noteController.notes;
+                  return GridView.builder(
+                    padding: EdgeInsets.zero,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 3 / 4,
+                    ),
+                    itemCount: notes.length,
+                    itemBuilder: (context, index) {
+                      return _buildNoteCard(context, notes[index]);
+                    },
+                  );
+                }),
               ),
             ],
           ),
-        ],
+        ),
       ),
-      body: Obx(() {
-        // Determine which view to display based on isGridView
-        return isGridView.value
-            ? GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount:
-                      2, // You can adjust this number based on screen size
-                  crossAxisSpacing: 10.0,
-                  mainAxisSpacing: 10.0,
-                ),
-                itemCount: noteController.notes.length,
-                itemBuilder: (context, index) {
-                  final note = noteController.notes[index];
-                  return Card(
-                    elevation: 4.0,
-                    child: InkWell(
-                      onTap: () {
-                        Get.to(() => AddNoteView(noteToEdit: note));
-                      },
-                      child: Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              note.title,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Text(note.content),
-                            Spacer(),
-                            IconButton(
-                              icon: Icon(
-                                note.isPinned
-                                    ? Icons.push_pin
-                                    : Icons.push_pin_outlined,
-                                color: note.isPinned ? Colors.yellow : null,
-                              ),
-                              onPressed: () {
-                                noteController.togglePin(note.id);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              )
-            : ListView.builder(
-                itemCount: noteController.notes.length,
-                itemBuilder: (context, index) {
-                  final note = noteController.notes[index];
-                  return ListTile(
-                    title: Text(note.title),
-                    subtitle: Text(note.content),
-                    trailing: IconButton(
-                      icon: Icon(
-                        note.isPinned
-                            ? Icons.push_pin
-                            : Icons.push_pin_outlined,
-                        color: note.isPinned ? Colors.yellow : null,
-                      ),
-                      onPressed: () {
-                        noteController.togglePin(note.id);
-                      },
-                    ),
-                    onTap: () {
-                      Get.to(() => AddNoteView(noteToEdit: note));
-                    },
-                  );
-                },
-              );
-      }),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Get.to(() => AddNoteView());
-        },
-        child: Icon(Icons.add),
+        onPressed: () => Get.to(() => AddNoteView()),
+        backgroundColor: Colors.blue,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildNoteCard(BuildContext context, Note note) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: () => Get.to(() => AddNoteView(noteToEdit: note)),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[850] : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 8,
+                offset: const Offset(2, 2),
+              )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              note.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: Text(
+                note.content,
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: isDark ? Colors.grey[300] : Colors.black87,
+                    ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: note.color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

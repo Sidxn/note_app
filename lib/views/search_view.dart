@@ -1,3 +1,4 @@
+
 import 'package:app_note/views/note_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -7,7 +8,6 @@ import '../models/note.dart';
 class NotesSearchDelegate extends SearchDelegate {
   final NoteController noteController = Get.find();
 
-  // Filter notes based on search query
   List<Note> _filterNotes(String query) {
     return noteController.notes.where((note) {
       return note.title.toLowerCase().contains(query.toLowerCase()) ||
@@ -18,12 +18,9 @@ class NotesSearchDelegate extends SearchDelegate {
   @override
   List<Widget> buildActions(BuildContext context) {
     return [
-      // Clear search action
       IconButton(
-        icon: Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-        },
+        icon: const Icon(Icons.clear),
+        onPressed: () => query = '',
       ),
     ];
   }
@@ -31,48 +28,61 @@ class NotesSearchDelegate extends SearchDelegate {
   @override
   Widget buildLeading(BuildContext context) {
     return IconButton(
-      icon: Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, null);
-      },
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () => close(context, null),
     );
   }
 
   @override
   Widget buildResults(BuildContext context) {
-    final filteredNotes = _filterNotes(query);
-
-    return ListView.builder(
-      itemCount: filteredNotes.length,
-      itemBuilder: (context, index) {
-        final note = filteredNotes[index];
-        return ListTile(
-          title: Text(note.title),
-          subtitle: Text(note.content),
-          onTap: () {
-            // Navigate to Edit Note View with the selected note
-            Get.to(() => AddNoteView(noteToEdit: note));
-          },
-        );
-      },
-    );
+    return _buildNoteResults();
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
+    return _buildNoteResults();
+  }
+
+  Widget _buildNoteResults() {
     final filteredNotes = _filterNotes(query);
 
-    return ListView.builder(
+    if (filteredNotes.isEmpty) {
+      return const Center(child: Text('No notes found.'));
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
       itemCount: filteredNotes.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final note = filteredNotes[index];
-        return ListTile(
-          title: Text(note.title),
-          subtitle: Text(note.content),
-          onTap: () {
-            // Navigate to Edit Note View with the selected note
-            Get.to(() => AddNoteView(noteToEdit: note));
-          },
+
+        return InkWell(
+          onTap: () => Get.to(() => AddNoteView(noteToEdit: note)),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  note.title,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  note.content,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
