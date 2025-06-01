@@ -1,9 +1,9 @@
-
-import 'package:app_note/views/note_view.dart';
+import 'package:app_note/features/notes/views/note_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/note_controller.dart';
 import '../models/note.dart';
+
 
 class NotesSearchDelegate extends SearchDelegate {
   final NoteController noteController = Get.find();
@@ -34,17 +34,15 @@ class NotesSearchDelegate extends SearchDelegate {
   }
 
   @override
-  Widget buildResults(BuildContext context) {
-    return _buildNoteResults();
-  }
+  Widget buildResults(BuildContext context) => _buildNoteResults(context);
 
   @override
-  Widget buildSuggestions(BuildContext context) {
-    return _buildNoteResults();
-  }
+  Widget buildSuggestions(BuildContext context) => _buildNoteResults(context);
 
-  Widget _buildNoteResults() {
+  Widget _buildNoteResults(BuildContext context) {
     final filteredNotes = _filterNotes(query);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? Colors.grey[900]! : Colors.grey[100]!;
 
     if (filteredNotes.isEmpty) {
       return const Center(child: Text('No notes found.'));
@@ -56,14 +54,13 @@ class NotesSearchDelegate extends SearchDelegate {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final note = filteredNotes[index];
-
         return InkWell(
           onTap: () => Get.to(() => AddNoteView(noteToEdit: note)),
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: cardColor,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(

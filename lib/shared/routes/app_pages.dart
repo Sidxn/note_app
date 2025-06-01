@@ -1,6 +1,6 @@
-import 'package:app_note/views/note_view.dart';
+import 'package:app_note/features/notes/views/note_view.dart';
 import 'package:get/get.dart';
-import '../views/home_view.dart';
+import '../../features/notes/views/home_view.dart';
 
 class AppPages {
   static final routes = [
