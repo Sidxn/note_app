@@ -14,10 +14,7 @@ class AppHeader extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
         ),
-        const CircleAvatar(
-          radius: 18,
-          backgroundImage: AssetImage('assets/avatar.png'),
-        ),
+        
       ],
     );
   }

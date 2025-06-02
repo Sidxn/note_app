@@ -4,6 +4,11 @@ import '../models/note.dart';
 class NoteController extends GetxController {
   var notes = <Note>[].obs;
 
+var isGridView = true.obs;
+
+void toggleViewMode() {
+  isGridView.value = !isGridView.value;
+}
   void addNote(Note note) {
     notes.add(note);
   }

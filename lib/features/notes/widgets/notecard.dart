@@ -1,50 +1,49 @@
-
 import 'package:app_note/features/notes/models/note.dart';
-import 'package:app_note/features/notes/views/note_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class NoteCard extends StatelessWidget {
+import '../views/note_view.dart';
+
+class NoteTile extends StatelessWidget {
   final Note note;
 
-  const NoteCard({super.key, required this.note});
+  const NoteTile({super.key, required this.note});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return GestureDetector(
-      onTap: () => Get.to(() => AddNoteView()),
+      onTap: () => Get.to(() => AddNoteView(noteToEdit: note)),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isDark ? Colors.grey[850] : Colors.white,
+          color: Colors.grey.shade100,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              note.title ?? "Untitled",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              maxLines: 2,
+              note.title,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
             Expanded(
               child: Text(
-                note.content ?? "",
-                style: Theme.of(context).textTheme.bodyMedium,
-                maxLines: 6,
+                note.content,
                 overflow: TextOverflow.ellipsis,
+                maxLines: 6,
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontSize: 14,
+                ),
               ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${note.createdAt.day}/${note.createdAt.month}/${note.createdAt.year}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),

@@ -1,8 +1,10 @@
+import 'package:app_note/features/notes/controllers/note_controller.dart';
 import 'package:app_note/shared/theme/theme.dart';
 import 'package:app_note/features/notes/views/home_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 void main() {
+  Get.put(NoteController()); 
   runApp(MyApp());
 }
 
