@@ -5,6 +5,6 @@ import '../../features/notes/views/home_view.dart';
 class AppPages {
   static final routes = [
     GetPage(name: '/', page: () => HomeView()),
-    GetPage(name: '/add-note', page: () => AddNoteView()),
+    GetPage(name: '/add-note', page: () => const AddNoteView()),
   ];
 }

@@ -35,7 +35,6 @@ class _AddNoteViewState extends State<AddNoteView> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? Colors.grey[900] : Colors.grey[100];
     final inputColor = isDark ? Colors.black : Colors.white;
 
     return Scaffold(

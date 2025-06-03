@@ -1,14 +1,15 @@
-import 'package:app_note/features/notes/views/note_view.dart';
-import 'package:app_note/features/notes/views/search_view.dart';
 import 'package:app_note/features/notes/widgets/notecard.dart';
 import 'package:app_note/features/notes/widgets/notesummery.dart';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../controllers/note_controller.dart';
+import '../models/note.dart';
+import 'note_view.dart';
 
 class HomeView extends StatelessWidget {
   final NoteController noteController = Get.put(NoteController());
+  final RxString searchQuery = ''.obs;
 
   HomeView({super.key});
 
@@ -22,74 +23,148 @@ class HomeView extends StatelessWidget {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              showSearch(context: context, delegate: NotesSearchDelegate());
-            },
-          ),
           Obx(() {
             return IconButton(
               icon: Icon(
-                noteController.isGridView.value ? Icons.view_list : Icons.grid_view,
+                noteController.isGrid.value ? Icons.view_list : Icons.grid_view,
               ),
               onPressed: () {
-                noteController.toggleViewMode();
+                noteController.isGrid.toggle();
               },
             );
           }),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Get.to(() => AddNoteView()),
+        onPressed: () => Get.to(() => const AddNoteView()),
         backgroundColor: Colors.black,
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: Obx(() {
-        final notes = noteController.notes;
+        final query = searchQuery.value.toLowerCase();
+        final List<Note> filteredNotes = noteController.notes.where((note) {
+          return note.title.toLowerCase().contains(query) ||
+              note.content.toLowerCase().contains(query);
+        }).toList();
+
+        final List<Note> pinnedNotes =
+            filteredNotes.where((note) => note.isPinned).toList();
+        final List<Note> otherNotes =
+            filteredNotes.where((note) => !note.isPinned).toList();
 
         return ListView(
           padding: const EdgeInsets.only(bottom: 80),
           children: [
-             NoteSummaryCard(),
-            const SizedBox(height: 10),
+            NoteSummaryCard(),
+            const SizedBox(height: 16),
+
+            // 🔍 Inline Search Bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: notes.isEmpty
+              child: TextField(
+                onChanged: (value) => searchQuery.value = value,
+                decoration: InputDecoration(
+                  hintText: 'Search notes...',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: filteredNotes.isEmpty
                   ? const Center(
                       child: Padding(
-                        padding: EdgeInsets.all(40.0),
+                        padding: EdgeInsets.only(top: 50),
                         child: Text(
-                          'No notes yet. Tap the + button to add one!',
+                          "No notes found.",
                           style: TextStyle(fontSize: 16, color: Colors.grey),
-                          textAlign: TextAlign.center,
                         ),
                       ),
                     )
-                  : noteController.isGridView.value
-                      ? GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: notes.length,
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 0.9,
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 📌 Pinned Notes Section
+                        if (pinnedNotes.isNotEmpty) ...[
+                          const Text(
+                            '📌 Pinned Notes',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
-                          itemBuilder: (context, index) {
-                            return NoteTile(note: notes[index]);
-                          },
-                        )
-                      : ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: notes.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            return NoteTile(note: notes[index]);
-                          },
-                        ),
+                          const SizedBox(height: 12),
+                          noteController.isGrid.value
+                              ? GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: pinnedNotes.length,
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: 0.85,
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    return NoteTile(note: pinnedNotes[index]);
+                                  },
+                                )
+                              : ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: pinnedNotes.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    return NoteTile(note: pinnedNotes[index]);
+                                  },
+                                ),
+                          const SizedBox(height: 24),
+                        ],
+
+                        // 🗂 Other Notes Section
+                        if (otherNotes.isNotEmpty) ...[
+                          const Text(
+                            'All Notes',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          const SizedBox(height: 12),
+                          noteController.isGrid.value
+                              ? GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: otherNotes.length,
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: 0.85,
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    return NoteTile(note: otherNotes[index]);
+                                  },
+                                )
+                              : ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: otherNotes.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    return NoteTile(note: otherNotes[index]);
+                                  },
+                                ),
+                        ],
+                      ],
+                    ),
             ),
           ],
         );

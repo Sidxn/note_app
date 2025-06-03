@@ -4,11 +4,15 @@ import '../models/note.dart';
 class NoteController extends GetxController {
   var notes = <Note>[].obs;
 
-var isGridView = true.obs;
+// note_controller.dart
+var isGrid = true.obs;
+ var selectedNotes = <String>{}.obs;
+  var isSelectionMode = false.obs;
 
 void toggleViewMode() {
-  isGridView.value = !isGridView.value;
+  isGrid.value = !isGrid.value;
 }
+
   void addNote(Note note) {
     notes.add(note);
   }
@@ -28,39 +32,37 @@ void toggleViewMode() {
       );
     }
   }
-
-  void togglePin(String id) {
-    final index = notes.indexWhere((note) => note.id == id);
-    if (index != -1) {
-     notes[index] = notes[index].copyWith(
-  isPinned: !notes[index].isPinned,
-);
-
-      notes.sort((a, b) {
-        if (a.isPinned && !b.isPinned) return -1;
-        if (!a.isPinned && b.isPinned) return 1;
-        return 0;
-      });
+  void toggleSelection(String noteId) {
+    if (selectedNotes.contains(noteId)) {
+      selectedNotes.remove(noteId);
+    } else {
+      selectedNotes.add(noteId);
     }
+
+    isSelectionMode.value = selectedNotes.isNotEmpty;
+  }
+
+  void clearSelection() {
+    selectedNotes.clear();
+    isSelectionMode.value = false;
+  }
+
+  void deleteSelectedNotes() {
+    notes.removeWhere((note) => selectedNotes.contains(note.id));
+    clearSelection();
+  }
+
+  void deleteNote(String noteId) {
+    notes.removeWhere((note) => note.id == noteId);
   }
 
   // Sort alphabetically (ascending)
-  void sortByTitleAsc() {
-    notes.sort((a, b) => a.title.compareTo(b.title));
+void togglePin(String id) {
+  final index = notes.indexWhere((note) => note.id == id);
+  if (index != -1) {
+    notes[index].isPinned = !notes[index].isPinned;
+    notes.refresh(); // Notify listeners
   }
+}
 
-  // Sort alphabetically (descending)
-  void sortByTitleDesc() {
-    notes.sort((a, b) => b.title.compareTo(a.title));
-  }
-
-  // Sort by created date (ascending)
-  void sortByDateAsc() {
-    notes.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-  }
-
-  // Sort by created date (descending)
-  void sortByDateDesc() {
-    notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-  }
 }

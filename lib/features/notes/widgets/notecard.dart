@@ -1,49 +1,54 @@
-import 'package:app_note/features/notes/models/note.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import '../controllers/note_controller.dart';
+import '../models/note.dart';
 import '../views/note_view.dart';
 
 class NoteTile extends StatelessWidget {
   final Note note;
+  final NoteController noteController = Get.find();
 
-  const NoteTile({super.key, required this.note});
+  NoteTile({super.key, required this.note});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: () => Get.to(() => AddNoteView(noteToEdit: note)),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.grey.shade100,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Text(
-              note.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Text(
-                note.content,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 6,
-                style: TextStyle(
-                  color: Colors.grey.shade700,
-                  fontSize: 14,
+            Positioned(
+              right: -8,
+              top: -8,
+              child: IconButton(
+                icon: Icon(
+                  note.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                  color: note.isPinned ? Colors.orange : Colors.grey,
                 ),
+                onPressed: () => noteController.togglePin(note.id),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              '${note.createdAt.day}/${note.createdAt.month}/${note.createdAt.year}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  note.title,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  note.content,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+              ],
             ),
           ],
         ),

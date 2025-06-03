@@ -1,7 +1,7 @@
 import 'package:app_note/features/notes/views/search_view.dart';
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+
 
 class CustomSearchBar extends StatelessWidget {
   const CustomSearchBar({super.key});
@@ -24,8 +24,8 @@ class CustomSearchBar extends StatelessWidget {
           color: isDark ? Colors.grey[800] : Colors.grey[200],
           borderRadius: BorderRadius.circular(30),
         ),
-        child: Row(
-          children: const [
+        child: const Row(
+          children: [
             Icon(Icons.search),
             SizedBox(width: 10),
             Text("Search notes..."),

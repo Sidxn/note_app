@@ -22,7 +22,7 @@ class AppTheme {
     brightness: Brightness.light,
     scaffoldBackgroundColor: AppColors.lightBackground,
     fontFamily: 'Urbanist',
-    textTheme: TextTheme(
+    textTheme: const TextTheme(
       titleLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.lightText),
       bodyMedium: TextStyle(fontSize: 14, color: AppColors.lightSubText),
     ),
@@ -33,15 +33,15 @@ class AppTheme {
       titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.lightText),
       iconTheme: IconThemeData(color: AppColors.lightText),
     ),
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: AppColors.fabBlue,
       foregroundColor: Colors.white,
-      shape: const CircleBorder(),
+      shape: CircleBorder(),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.lightCard,
-      hintStyle: TextStyle(color: AppColors.lightSubText),
+      hintStyle: const TextStyle(color: AppColors.lightSubText),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -53,7 +53,7 @@ class AppTheme {
     brightness: Brightness.dark,
     scaffoldBackgroundColor: AppColors.darkBackground,
     fontFamily: 'Urbanist',
-    textTheme: TextTheme(
+    textTheme: const TextTheme(
       titleLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.darkText),
       bodyMedium: TextStyle(fontSize: 14, color: AppColors.darkSubText),
     ),
@@ -64,15 +64,15 @@ class AppTheme {
       titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.darkText),
       iconTheme: IconThemeData(color: AppColors.darkText),
     ),
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: AppColors.fabBlue,
       foregroundColor: Colors.white,
-      shape: const CircleBorder(),
+      shape: CircleBorder(),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.darkCard,
-      hintStyle: TextStyle(color: AppColors.darkSubText),
+      hintStyle: const TextStyle(color: AppColors.darkSubText),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
