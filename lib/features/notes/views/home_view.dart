@@ -17,24 +17,56 @@ class HomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'My Notes',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        actions: [
-          Obx(() {
-            return IconButton(
-              icon: Icon(
-                noteController.isGrid.value ? Icons.view_list : Icons.grid_view,
+  title: Obx(() => Text(
+        noteController.isSelectionMode.value
+            ? '${noteController.selectedNotes.length} selected'
+            : 'My Notes',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      )),
+  centerTitle: true,
+  leading: Obx(() => noteController.isSelectionMode.value
+      ? IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => noteController.clearSelection(),
+        )
+      : const SizedBox.shrink()),
+  actions: [
+    Obx(() {
+      if (noteController.isSelectionMode.value) {
+        return IconButton(
+          icon: const Icon(Icons.delete),
+          onPressed: () {
+            Get.defaultDialog(
+              title: 'Delete Notes',
+              middleText: 'Are you sure you want to delete selected notes?',
+              confirm: TextButton(
+                onPressed: () {
+                  noteController.deleteSelectedNotes();
+                  Get.back();
+                },
+                child: const Text("Yes"),
               ),
-              onPressed: () {
-                noteController.isGrid.toggle();
-              },
+              cancel: TextButton(
+                onPressed: () => Get.back(),
+                child: const Text("Cancel"),
+              ),
             );
-          }),
-        ],
-      ),
+          },
+        );
+      } else {
+        return IconButton(
+          icon: Icon(
+            noteController.isGrid.value ? Icons.view_list : Icons.grid_view,
+          ),
+          onPressed: () {
+            noteController.isGrid.toggle();
+          },
+        );
+      }
+    }),
+  ],
+),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () => Get.to(() => const AddNoteView()),
         backgroundColor: Colors.black,
