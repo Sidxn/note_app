@@ -1,206 +1,189 @@
-import 'package:app_note/features/notes/widgets/notecard.dart';
-import 'package:app_note/features/notes/widgets/notesummery.dart';
+import 'package:app_note/features/notes/controllers/note_controller.dart';
+import 'package:app_note/features/notes/models/note.dart';
+import 'package:app_note/features/notes/views/note_view.dart';
+import 'package:app_note/features/notes/widgets/appheader.dart';
+import 'package:app_note/shared/theme/colorScheme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../widgets/notecard.dart';
 
-import '../controllers/note_controller.dart';
-import '../models/note.dart';
-import 'note_view.dart';
+class NotesHomePage extends StatelessWidget {
+  NotesHomePage({super.key});
 
-class HomeView extends StatelessWidget {
   final NoteController noteController = Get.put(NoteController());
   final RxString searchQuery = ''.obs;
-
-  HomeView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-  title: Obx(() => Text(
-        noteController.isSelectionMode.value
-            ? '${noteController.selectedNotes.length} selected'
-            : 'My Notes',
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      )),
-  centerTitle: true,
-  leading: Obx(() => noteController.isSelectionMode.value
-      ? IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => noteController.clearSelection(),
-        )
-      : const SizedBox.shrink()),
-  actions: [
-    Obx(() {
-      if (noteController.isSelectionMode.value) {
-        return IconButton(
-          icon: const Icon(Icons.delete),
-          onPressed: () {
-            Get.defaultDialog(
-              title: 'Delete Notes',
-              middleText: 'Are you sure you want to delete selected notes?',
-              confirm: TextButton(
-                onPressed: () {
-                  noteController.deleteSelectedNotes();
-                  Get.back();
-                },
-                child: const Text("Yes"),
-              ),
-              cancel: TextButton(
-                onPressed: () => Get.back(),
-                child: const Text("Cancel"),
-              ),
-            );
-          },
-        );
-      } else {
-        return IconButton(
-          icon: Icon(
-            noteController.isGrid.value ? Icons.view_list : Icons.grid_view,
-          ),
-          onPressed: () {
-            noteController.isGrid.toggle();
-          },
-        );
-      }
-    }),
-  ],
-),
-
+      appBar: PreferredSize(
+    preferredSize: const Size.fromHeight(kToolbarHeight),
+    child: Obx(() => AppBar(
+          leading: noteController.isSelectionMode.value
+              ? IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: noteController.clearSelection,
+                )
+              : null,
+          title: noteController.isSelectionMode.value
+              ? Text('${noteController.selectedNotes.length} selected')
+              : const Text('My Notes',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryBlue,
+                  )), 
+          actions: noteController.isSelectionMode.value
+              ? [
+                  IconButton(
+                    icon: const Icon(Icons.select_all),
+                    onPressed: () {
+                      if (noteController.selectedNotes.length ==
+                          noteController.notes.length) {
+                        noteController.deselectAll();
+                      } else {
+                        noteController.selectAll();
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () async {
+                      await noteController.deleteSelectedNotes();
+                    },
+                  ),
+                ]
+              : [
+                  IconButton(
+                    icon: Icon(noteController.isGrid.value
+                        ? Icons.grid_view_rounded
+                        : Icons.view_agenda),
+                    onPressed: noteController.toggleViewMode,
+                  )
+                ],
+        )),
+  ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Get.to(() => const AddNoteView()),
-        backgroundColor: Colors.black,
+        onPressed: () {
+          // Navigate to Add Note page
+          Get.to(() => AddNoteView()); // Replace with your note editor page
+        },
+        backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: Obx(() {
-        final query = searchQuery.value.toLowerCase();
-        final List<Note> filteredNotes = noteController.notes.where((note) {
-          return note.title.toLowerCase().contains(query) ||
-              note.content.toLowerCase().contains(query);
-        }).toList();
+      body:  Padding(
+  padding: const EdgeInsets.all(16),
+  child: Obx(() {
+    List<Note> allNotes = noteController.getAllNotes();
 
-        final List<Note> pinnedNotes =
-            filteredNotes.where((note) => note.isPinned).toList();
-        final List<Note> otherNotes =
-            filteredNotes.where((note) => !note.isPinned).toList();
+    // Filter by search query
+    List<Note> filteredNotes = allNotes.where((note) {
+      final query = searchQuery.value.toLowerCase();
+      return note.title.toLowerCase().contains(query) ||
+             note.content.toLowerCase().contains(query);
+    }).toList();
 
-        return ListView(
-          padding: const EdgeInsets.only(bottom: 80),
-          children: [
-            NoteSummaryCard(),
-            const SizedBox(height: 16),
+    // Sort so pinned notes come first
+    filteredNotes.sort((a, b) {
+      if (a.isPinned && !b.isPinned) return -1;  // a before b
+      if (!a.isPinned && b.isPinned) return 1;   // b before a
+      return b.createdAt.compareTo(a.createdAt); // Newer first if same pin status
+    });
 
-            // 🔍 Inline Search Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                onChanged: (value) => searchQuery.value = value,
-                decoration: InputDecoration(
-                  hintText: 'Search notes...',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          decoration: InputDecoration(
+            hintText: 'Search notes...',
+            prefixIcon: const Icon(Icons.search),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
             ),
-            const SizedBox(height: 16),
+            fillColor: Theme.of(context).cardColor,
+            filled: true,
+          ),
+          onChanged: (value) => searchQuery.value = value,
+        ),
+        const SizedBox(height: 16),
+        AppHeader( notes:filteredNotes,),
+        const SizedBox(height: 16),
+        Expanded(
+          child: _buildNotesList(filteredNotes),
+        ),
+      ],
+    );
+  }),
+),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: filteredNotes.isEmpty
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.only(top: 50),
-                        child: Text(
-                          "No notes found.",
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                      ),
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 📌 Pinned Notes Section
-                        if (pinnedNotes.isNotEmpty) ...[
-                          const Text(
-                            '📌 Pinned Notes',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(height: 12),
-                          noteController.isGrid.value
-                              ? GridView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: pinnedNotes.length,
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 12,
-                                    childAspectRatio: 0.85,
-                                  ),
-                                  itemBuilder: (context, index) {
-                                    return NoteTile(note: pinnedNotes[index]);
-                                  },
-                                )
-                              : ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: pinnedNotes.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 12),
-                                  itemBuilder: (context, index) {
-                                    return NoteTile(note: pinnedNotes[index]);
-                                  },
-                                ),
-                          const SizedBox(height: 24),
-                        ],
 
-                        // 🗂 Other Notes Section
-                        if (otherNotes.isNotEmpty) ...[
-                          const Text(
-                            'All Notes',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(height: 12),
-                          noteController.isGrid.value
-                              ? GridView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: otherNotes.length,
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 12,
-                                    childAspectRatio: 0.85,
-                                  ),
-                                  itemBuilder: (context, index) {
-                                    return NoteTile(note: otherNotes[index]);
-                                  },
-                                )
-                              : ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: otherNotes.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 12),
-                                  itemBuilder: (context, index) {
-                                    return NoteTile(note: otherNotes[index]);
-                                  },
-                                ),
-                        ],
-                      ],
-                    ),
-            ),
-          ],
-        );
-      }),
     );
   }
+
+
+Widget _buildNotesList(List<Note> notes) {
+  return Obx(() {
+    final bool isSelectionMode = noteController.isSelectionMode.value;
+
+    return noteController.isGrid.value
+        ? GridView.builder(
+            itemCount: notes.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 3 / 4,
+            ),
+            itemBuilder: (context, index) {
+              final Note note = notes[index];
+              return NoteCard(
+                note: note,
+                onPinToggle: () => noteController.togglePin(note.id),
+                onTap: () {
+                  if (isSelectionMode) {
+                    noteController.toggleNoteSelection(note.id);
+                  } else {
+                    // Open note (if you want, navigate to detail page)
+                    // Get.to(() => NoteView(note: note));
+                  }
+                },
+                onLongPress: () {
+                  if (!isSelectionMode) {
+                    noteController.enterSelectionMode(note.id);
+                  } else {
+                    noteController.toggleNoteSelection(note.id);
+                  }
+                },
+              );
+            },
+          )
+        : ListView.builder(
+            itemCount: notes.length,
+            itemBuilder: (context, index) {
+              final Note note = notes[index];
+              return NoteCard(
+                note: note,
+                onPinToggle: () => noteController.togglePin(note.id),
+                onTap: () {
+                  if (isSelectionMode) {
+                    noteController.toggleNoteSelection(note.id);
+                  } else {
+                    // Open note
+                    // Get.to(() => NoteView(note: note));
+                  }
+                },
+                onLongPress: () {
+                  if (!isSelectionMode) {
+                    noteController.enterSelectionMode(note.id);
+                  } else {
+                    noteController.toggleNoteSelection(note.id);
+                  }
+                },
+              );
+            },
+          );
+  });
+}
+
+
 }

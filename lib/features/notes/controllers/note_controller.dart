@@ -1,45 +1,108 @@
+import 'package:app_note/features/notes/models/note.dart';
 import 'package:get/get.dart';
-import '../models/note.dart';
+import 'package:hive/hive.dart';
 
 class NoteController extends GetxController {
   var notes = <Note>[].obs;
+  var isGrid = true.obs;
 
-// note_controller.dart
-var isGrid = true.obs;
- var selectedNotes = <String>{}.obs;
+  var selectedNotes = <String>{}.obs;
   var isSelectionMode = false.obs;
 
-void toggleViewMode() {
-  isGrid.value = !isGrid.value;
-}
+  late final Box<Note> _noteBox;
 
-  void addNote(Note note) {
-    notes.add(note);
+  @override
+  void onInit() {
+    super.onInit();
+    _noteBox = Hive.box<Note>('notes');
+    notes.value = _noteBox.values.toList();
+
+    _noteBox.watch().listen((_) {
+      // Automatically refresh notes on any change
+      notes.value = _noteBox.values.toList();
+    });
   }
 
-  void deleteNoteById(String id) {
-    notes.removeWhere((note) => note.id == id);
+  void loadNotesFromBox() {
+    notes.assignAll(_noteBox.values.toList());
   }
 
-  void updateNote(String id, String title, String content) {
-    int index = notes.indexWhere((note) => note.id == id);
-    if (index != -1) {
-      notes[index] = Note(
+  List<Note> getAllNotes() => notes.toList();
+
+  List<Note> getPinnedNotes() =>
+      notes.where((note) => note.isPinned == true).toList();
+
+  List<Note> getUnpinnedNotes() =>
+      notes.where((note) => note.isPinned != true).toList();
+
+  void toggleViewMode() {
+    isGrid.value = !isGrid.value;
+  }
+
+  Future<void> addNote(Note note) async {
+    await _noteBox.put(note.id, note);
+    notes.value = _noteBox.values.toList();
+  }
+
+  Future<void> deleteNoteById(String id) async {
+    await _noteBox.delete(id);
+    notes.value = _noteBox.values.toList();
+  }
+
+  Future<void> deleteSelectedNotes() async {
+    for (String id in selectedNotes) {
+      await _noteBox.delete(id);
+    }
+    clearSelection();
+    notes.value = _noteBox.values.toList();
+  }
+
+  Future<void> updateNote(String id, String title, String content, {required bool isPinned}) async {
+    Note? existing = _noteBox.get(id);
+    if (existing != null) {
+      Note updated = Note(
         id: id,
         title: title,
         content: content,
-        createdAt: notes[index].createdAt,
+        createdAt: existing.createdAt,
+        isPinned: isPinned,
       );
+      await _noteBox.put(id, updated);
+      notes.value = _noteBox.values.toList();
     }
   }
-  void toggleSelection(String noteId) {
-    if (selectedNotes.contains(noteId)) {
-      selectedNotes.remove(noteId);
-    } else {
-      selectedNotes.add(noteId);
-    }
 
-    isSelectionMode.value = selectedNotes.isNotEmpty;
+  Future<void> togglePin(String id) async {
+    Note? note = _noteBox.get(id);
+    if (note != null) {
+      Note updated = Note(
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        createdAt: note.createdAt,
+        isPinned: !note.isPinned,
+      );
+      await _noteBox.put(id, updated);
+      notes.value = _noteBox.values.toList();
+    }
+  }
+
+  // ─── Selection Mode ──────────────────────────────────────────────────────────
+
+  void enterSelectionMode(String id) {
+    isSelectionMode.value = true;
+    selectedNotes.add(id);
+  }
+
+  void toggleNoteSelection(String id) {
+    if (selectedNotes.contains(id)) {
+      selectedNotes.remove(id);
+      if (selectedNotes.isEmpty) {
+        isSelectionMode.value = false;
+      }
+    } else {
+      selectedNotes.add(id);
+    }
   }
 
   void clearSelection() {
@@ -47,22 +110,12 @@ void toggleViewMode() {
     isSelectionMode.value = false;
   }
 
-  void deleteSelectedNotes() {
-    notes.removeWhere((note) => selectedNotes.contains(note.id));
-    clearSelection();
+  void selectAll() {
+    selectedNotes.addAll(notes.map((note) => note.id));
   }
 
-  void deleteNote(String noteId) {
-    notes.removeWhere((note) => note.id == noteId);
+  void deselectAll() {
+    selectedNotes.clear();
+    isSelectionMode.value = false;
   }
-
-  // Sort alphabetically (ascending)
-void togglePin(String id) {
-  final index = notes.indexWhere((note) => note.id == id);
-  if (index != -1) {
-    notes[index].isPinned = !notes[index].isPinned;
-    notes.refresh(); // Notify listeners
-  }
-}
-
 }

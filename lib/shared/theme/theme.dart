@@ -4,82 +4,38 @@ import 'colorScheme.dart';
 class AppTheme {
   static ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
+    scaffoldBackgroundColor: AppColors.background,
     fontFamily: 'Urbanist',
-    scaffoldBackgroundColor: AppColors.lightBackground,
+    textTheme: const TextTheme(
+      titleLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark),
+      bodyMedium: TextStyle(fontSize: 14, color: AppColors.textGray),
+    ),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      centerTitle: true,
+      titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark),
+      iconTheme: IconThemeData(color: AppColors.textDark),
+    ),
     cardColor: AppColors.lightCard,
-    textTheme: const TextTheme(
-      titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.lightText),
-      bodyMedium: TextStyle(fontSize: 14, color: AppColors.lightSubText),
-      labelMedium: TextStyle(fontSize: 12, color: AppColors.accent),
-    ),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.lightText),
-      iconTheme: IconThemeData(color: AppColors.lightText),
-    ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: AppColors.accent,
+      backgroundColor: AppColors.primaryBlue,
       foregroundColor: Colors.white,
-      elevation: 4,
     ),
-    colorScheme: const ColorScheme.light(
-      primary: AppColors.accent,
-      onPrimary: Colors.white,
-      background: AppColors.lightBackground,
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.white,
+      hintStyle: const TextStyle(color: AppColors.textGray),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+    ),
+    colorScheme: ColorScheme.light(
+      primary: AppColors.primaryBlue,
+      background: AppColors.background,
       surface: AppColors.lightCard,
-      onSurface: AppColors.lightText,
+      onSurface: AppColors.textDark,
     ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: AppColors.lightCard,
-      hintStyle: const TextStyle(color: AppColors.lightSubText),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.accentLight),
-      ),
-    ),
-    iconTheme: const IconThemeData(color: AppColors.accent),
   );
-
-  static ThemeData darkTheme = ThemeData(
-    brightness: Brightness.dark,
-    fontFamily: 'Urbanist',
-    scaffoldBackgroundColor: AppColors.darkBackground,
-    cardColor: AppColors.darkCard,
-    textTheme: const TextTheme(
-      titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.darkText),
-      bodyMedium: TextStyle(fontSize: 14, color: AppColors.darkSubText),
-      labelMedium: TextStyle(fontSize: 12, color: AppColors.accentLight),
-    ),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.darkText),
-      iconTheme: IconThemeData(color: AppColors.darkText),
-    ),
-    floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: AppColors.accentDark,
-      foregroundColor: Colors.white,
-      elevation: 4,
-    ),
-    colorScheme: const ColorScheme.dark(
-      primary: AppColors.accentDark,
-      onPrimary: Colors.white,
-      background: AppColors.darkBackground,
-      surface: AppColors.darkCard,
-      onSurface: AppColors.darkText,
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: AppColors.darkCard,
-      hintStyle: const TextStyle(color: AppColors.darkSubText),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.accentDark),
-      ),
-    ),
-    iconTheme: const IconThemeData(color: AppColors.accentDark),
-  );
-
-  }
+}
