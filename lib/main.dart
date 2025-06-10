@@ -16,7 +16,7 @@ void main() async {
   Hive.registerAdapter(NoteAdapter()); // Replace with your adapter class
 
   // Open your boxes BEFORE injecting controller
-  await Hive.openBox<Note>('notes');
+  await Hive.openBox<Note>('note');
 
   // Inject NoteController AFTER box is opened
   Get.put(NoteController());
@@ -33,6 +33,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
     title: 'Keep Note',
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme, 
    
       themeMode: ThemeMode.system, // Or ThemeMode.light / dark
       home:  NotesHomePage(),

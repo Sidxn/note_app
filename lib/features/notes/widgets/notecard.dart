@@ -41,11 +41,10 @@ class NoteCard extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    Align(
-      alignment: Alignment.topRight,
+          child: Stack(
+            children: [
+               Positioned(
+     left: 120,
       child: isSelected
           ? Icon(
               Icons.check_circle,
@@ -62,30 +61,36 @@ class NoteCard extends StatelessWidget {
             ),
     ),
     const SizedBox(height: 6),
-    if (note.title.isNotEmpty) ...[
-      Text(
-        note.title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppColors.textDark,
-              fontWeight: FontWeight.w600,
-            ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      const SizedBox(height: 6),
-    ],
-    if (note.content.isNotEmpty)
-      Text(
-        note.content,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textGray,
-              fontWeight: FontWeight.w400,
-            ),
-        maxLines: 5,
-        overflow: TextOverflow.ellipsis,
-      ),
-  ],
-),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                 
+                  if (note.title.isNotEmpty) ...[
+                    Text(
+                      note.title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.textDark,
+                  fontWeight: FontWeight.w600,
+                ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                  ],
+                  if (note.content.isNotEmpty)
+                    Text(
+                      note.content,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textGray,
+                  fontWeight: FontWeight.w400,
+                ),
+                      maxLines: 5,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ],
+          ),
 
         );
       }),

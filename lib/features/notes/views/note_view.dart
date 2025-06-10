@@ -1,3 +1,5 @@
+import 'dart:async'; // ADD THIS LINE
+import 'package:app_note/features/notes/models/text_model.dart';
 import 'package:app_note/shared/theme/colorScheme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -15,7 +17,8 @@ class AddNoteView extends StatefulWidget {
 }
 
 class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStateMixin {
-  final NoteController noteController = Get.find();
+  final NoteController noteController = Get.find<NoteController>();
+
   final TextEditingController titleController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
 
@@ -28,14 +31,34 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
+  Timer? _debounceTimer; // ADD THIS FIELD
+
   @override
   void initState() {
     super.initState();
+
+    noteController.clearUndoRedo();
+
     if (widget.noteToEdit != null) {
-      titleController.text = widget.noteToEdit!.title;
-      contentController.text = widget.noteToEdit!.content;
-      isPinned = widget.noteToEdit!.isPinned ?? false;
+      final note = widget.noteToEdit!;
+      titleController.text = note.title;
+      contentController.text = note.content;
+      isPinned = note.isPinned;
+      fontSize = note.fontSize;
+      isBold = note.isBold;
+      isItalic = note.isItalic;
+      textAlign = _getTextAlignFromIndex(note.textAlignIndex);
     }
+
+    _pushEditorStateToUndo();
+
+    contentController.addListener(() {
+      if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
+
+      _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+        _pushEditorStateToUndo();
+      });
+    });
 
     _animationController = AnimationController(
       vsync: this,
@@ -52,6 +75,9 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
 
   @override
   void dispose() {
+    _debounceTimer?.cancel(); // ADD THIS LINE
+    contentController.dispose();
+    titleController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -61,9 +87,10 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(widget.noteToEdit == null ? 'New Note' : 'Edit Note',style: TextStyle(
-          color: AppColors.primaryBlue 
-        ),),
+        title: Text(
+          widget.noteToEdit == null ? 'New Note' : 'Edit Note',
+          style: const TextStyle(color: AppColors.primaryBlue),
+        ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: AppColors.background,
@@ -149,18 +176,25 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
               ),
             ),
             const SizedBox(height: 8),
-     
-            const SizedBox(height: 12),
           ],
         ),
       ),
     );
   }
 
+
   Widget _buildCustomizationBar() {
+    double screenWidth = MediaQuery.of(context).size.width;
+
+    double iconSize = screenWidth < 360
+        ? 18
+        : screenWidth < 400
+            ? 20
+            : 22;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       height: 50,
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -173,44 +207,137 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildToggleButton(Icons.format_bold, isBold, () => setState(() => isBold = !isBold)),
-          _buildToggleButton(Icons.format_italic, isItalic, () => setState(() => isItalic = !isItalic)),
-          _buildToggleButton(Icons.format_align_left, textAlign == TextAlign.start, () => setState(() => textAlign = TextAlign.start)),
-          _buildToggleButton(Icons.format_align_center, textAlign == TextAlign.center, () => setState(() => textAlign = TextAlign.center)),
-          _buildToggleButton(Icons.format_align_right, textAlign == TextAlign.end, () => setState(() => textAlign = TextAlign.end)),
-          DropdownButton<double>(
-            value: fontSize,
-            underline: const SizedBox(),
-            dropdownColor: AppColors.white,
-            style: const TextStyle(
-              fontFamily: 'Urbanist',
-              fontSize: 14,
-              color: AppColors.textDark,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _buildToolbarButton(
+              icon: Icons.undo,
+              enabled: noteController.undoStack.length > 1,
+              onTap: () {
+                TextEditorState? previous = noteController.undo();
+                if (previous != null) {
+                  setState(() {
+                    contentController.text = previous.content;
+                    contentController.selection = TextSelection.collapsed(offset: previous.content.length);
+                    fontSize = previous.fontSize;
+                    isBold = previous.isBold;
+                    isItalic = previous.isItalic;
+                    textAlign = previous.textAlign;
+                  });
+                }
+              },
+              iconSize: iconSize,
             ),
-            items: [14, 16, 18, 20, 22]
-                .map((size) => DropdownMenuItem(value: size.toDouble(), child: Text(size.toString())))
-                .toList(),
-            onChanged: (value) => setState(() => fontSize = value!),
-          ),
-        ],
+            _buildToolbarButton(
+              icon: Icons.redo,
+              enabled: noteController.redoStack.isNotEmpty,
+              onTap: () {
+                TextEditorState? next = noteController.redo();
+                if (next != null) {
+                  setState(() {
+                    contentController.text = next.content;
+                    contentController.selection = TextSelection.collapsed(offset: next.content.length);
+                    fontSize = next.fontSize;
+                    isBold = next.isBold;
+                    isItalic = next.isItalic;
+                    textAlign = next.textAlign;
+                  });
+                }
+              },
+              iconSize: iconSize,
+            ),
+            _buildToggleButton(Icons.format_bold, isBold, () {
+              setState(() {
+                isBold = !isBold;
+                _pushEditorStateToUndo();
+              });
+            }, iconSize),
+            _buildToggleButton(Icons.format_italic, isItalic, () {
+              setState(() {
+                isItalic = !isItalic;
+                _pushEditorStateToUndo();
+              });
+            }, iconSize),
+            _buildToggleButton(Icons.format_align_left, textAlign == TextAlign.start, () {
+              setState(() {
+                textAlign = TextAlign.start;
+                _pushEditorStateToUndo();
+              });
+            }, iconSize),
+            _buildToggleButton(Icons.format_align_center, textAlign == TextAlign.center, () {
+              setState(() {
+                textAlign = TextAlign.center;
+                _pushEditorStateToUndo();
+              });
+            }, iconSize),
+            _buildToggleButton(Icons.format_align_right, textAlign == TextAlign.end, () {
+              setState(() {
+                textAlign = TextAlign.end;
+                _pushEditorStateToUndo();
+              });
+            }, iconSize),
+            SizedBox(
+              width: 50,
+              child: DropdownButton<double>(
+                value: fontSize,
+                isDense: true,
+                isExpanded: false,
+                underline: const SizedBox(),
+                dropdownColor: AppColors.white,
+                style: const TextStyle(
+                  fontFamily: 'Urbanist',
+                  fontSize: 14,
+                  color: AppColors.textDark,
+                ),
+                items: [14, 16, 18, 20, 22]
+                    .map((size) => DropdownMenuItem(value: size.toDouble(), child: Text(size.toString())))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    fontSize = value!;
+                    _pushEditorStateToUndo();
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildToggleButton(IconData icon, bool selected, VoidCallback onPressed) {
+  Widget _buildToolbarButton({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+    required double iconSize,
+  }) {
+    return IconButton(
+      icon: Icon(
+        icon,
+        color: enabled ? AppColors.primaryBlue : AppColors.textGray,
+        size: iconSize,
+      ),
+      onPressed: enabled ? onTap : null,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+    );
+  }
+
+  Widget _buildToggleButton(IconData icon, bool selected, VoidCallback onPressed, double iconSize) {
     return IconButton(
       icon: Icon(
         icon,
         color: selected ? AppColors.primaryBlue : AppColors.textGray,
+        size: iconSize,
       ),
       onPressed: onPressed,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
     );
   }
-
-
 
   void _saveNote() {
     final title = titleController.text.trim();
@@ -228,24 +355,71 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
         content: content,
         createdAt: DateTime.now(),
         isPinned: isPinned,
+        fontSize: fontSize,
+        isBold: isBold,
+        isItalic: isItalic,
+        textAlignIndex: _getTextAlignIndex(textAlign),
       );
       noteController.addNote(note);
     } else {
-      noteController.updateNote(
-        widget.noteToEdit!.id,
-        title,
-        content,
-        isPinned: isPinned,
-      );
+  noteController.updateNote(
+  widget.noteToEdit!.id,
+  title,
+  content,
+  isPinned: isPinned,
+  fontSize: fontSize,
+  isBold: isBold,
+  isItalic: isItalic,
+  textAlignIndex: _getTextAlignIndex(textAlign),
+);
+
     }
 
-    Get.back();
+    Navigator.pop(context);
   }
 
   void _deleteNote() {
     if (widget.noteToEdit != null) {
       noteController.deleteNoteById(widget.noteToEdit!.id);
-      Get.back();
+      Navigator.pop(context);
     }
   }
-}
+
+  int _getTextAlignIndex(TextAlign align) {
+    switch (align) {
+      case TextAlign.start:
+        return 0;
+      case TextAlign.center:
+        return 1;
+      case TextAlign.end:
+        return 2;
+      default:
+        return 0;
+    }
+  }
+
+  TextAlign _getTextAlignFromIndex(int index) {
+    switch (index) {
+      case 0:
+        return TextAlign.start;
+      case 1:
+        return TextAlign.center;
+      case 2:
+        return TextAlign.end;
+      default:
+        return TextAlign.start;
+    }
+  }
+
+  void _pushEditorStateToUndo() {
+    noteController.pushToUndoStack(
+      TextEditorState(
+        content: contentController.text,
+        fontSize: fontSize,
+        isBold: isBold,
+        isItalic: isItalic,
+        textAlign: textAlign,
+      ),
+    );
+  }
+} 

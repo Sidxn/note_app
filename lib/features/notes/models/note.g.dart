@@ -22,13 +22,17 @@ class NoteAdapter extends TypeAdapter<Note> {
       content: fields[2] as String,
       createdAt: fields[3] as DateTime,
       isPinned: fields[4] as bool,
+      fontSize: fields[5] as double,
+      isBold: fields[6] as bool,
+      isItalic: fields[7] as bool,
+      textAlignIndex: fields[8] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, Note obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +42,15 @@ class NoteAdapter extends TypeAdapter<Note> {
       ..writeByte(3)
       ..write(obj.createdAt)
       ..writeByte(4)
-      ..write(obj.isPinned);
+      ..write(obj.isPinned)
+      ..writeByte(5)
+      ..write(obj.fontSize)
+      ..writeByte(6)
+      ..write(obj.isBold)
+      ..writeByte(7)
+      ..write(obj.isItalic)
+      ..writeByte(8)
+      ..write(obj.textAlignIndex);
   }
 
   @override

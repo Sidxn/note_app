@@ -1,6 +1,7 @@
 import 'package:app_note/features/notes/controllers/note_controller.dart';
 import 'package:app_note/features/notes/models/note.dart';
 import 'package:app_note/features/notes/views/note_view.dart';
+import 'package:app_note/features/notes/views/preview_screen_view.dart';
 import 'package:app_note/features/notes/widgets/appheader.dart';
 import 'package:app_note/shared/theme/colorScheme.dart';
 import 'package:flutter/material.dart';
@@ -143,8 +144,8 @@ Widget _buildNotesList(List<Note> notes) {
                   if (isSelectionMode) {
                     noteController.toggleNoteSelection(note.id);
                   } else {
-                    // Open note (if you want, navigate to detail page)
-                    // Get.to(() => NoteView(note: note));
+ Get.to(() => NotePreviewScreen(note: note));
+
                   }
                 },
                 onLongPress: () {
@@ -168,8 +169,8 @@ Widget _buildNotesList(List<Note> notes) {
                   if (isSelectionMode) {
                     noteController.toggleNoteSelection(note.id);
                   } else {
-                    // Open note
-                    // Get.to(() => NoteView(note: note));
+    Get.to(() => NotePreviewScreen(note: note));
+
                   }
                 },
                 onLongPress: () {

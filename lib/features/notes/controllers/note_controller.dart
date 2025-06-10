@@ -1,3 +1,4 @@
+import 'package:app_note/features/notes/models/text_model.dart';
 import 'package:app_note/features/notes/models/note.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
@@ -11,14 +12,18 @@ class NoteController extends GetxController {
 
   late final Box<Note> _noteBox;
 
+  // ─── Undo / Redo Stack ────────────────────────────────────────────────────────
+  var undoStack = <TextEditorState>[].obs;
+  var redoStack = <TextEditorState>[].obs;
+  bool _isApplyingUndoRedo = false;
+
   @override
   void onInit() {
     super.onInit();
-    _noteBox = Hive.box<Note>('notes');
+    _noteBox = Hive.box<Note>('note');
     notes.value = _noteBox.values.toList();
 
     _noteBox.watch().listen((_) {
-      // Automatically refresh notes on any change
       notes.value = _noteBox.values.toList();
     });
   }
@@ -57,7 +62,17 @@ class NoteController extends GetxController {
     notes.value = _noteBox.values.toList();
   }
 
-  Future<void> updateNote(String id, String title, String content, {required bool isPinned}) async {
+  /// UPDATED updateNote → now supports fontSize, isBold, isItalic, textAlignIndex
+  Future<void> updateNote(
+    String id,
+    String title,
+    String content, {
+    required bool isPinned,
+    required double fontSize,
+    required bool isBold,
+    required bool isItalic,
+    required int textAlignIndex,
+  }) async {
     Note? existing = _noteBox.get(id);
     if (existing != null) {
       Note updated = Note(
@@ -66,6 +81,10 @@ class NoteController extends GetxController {
         content: content,
         createdAt: existing.createdAt,
         isPinned: isPinned,
+        fontSize: fontSize,
+        isBold: isBold,
+        isItalic: isItalic,
+        textAlignIndex: textAlignIndex,
       );
       await _noteBox.put(id, updated);
       notes.value = _noteBox.values.toList();
@@ -81,6 +100,10 @@ class NoteController extends GetxController {
         content: note.content,
         createdAt: note.createdAt,
         isPinned: !note.isPinned,
+        fontSize: note.fontSize,
+        isBold: note.isBold,
+        isItalic: note.isItalic,
+        textAlignIndex: note.textAlignIndex,
       );
       await _noteBox.put(id, updated);
       notes.value = _noteBox.values.toList();
@@ -117,5 +140,64 @@ class NoteController extends GetxController {
   void deselectAll() {
     selectedNotes.clear();
     isSelectionMode.value = false;
+  }
+
+  // ─── Undo / Redo Functions ────────────────────────────────────────────────────
+
+  void pushToUndoStack(TextEditorState state) {
+    if (_isApplyingUndoRedo) return;
+
+    if (undoStack.isEmpty || !_areStatesEqual(undoStack.last, state)) {
+      undoStack.add(state);
+      redoStack.clear();
+      // Optional: Limit stack size to 50
+      if (undoStack.length > 50) {
+        undoStack.removeAt(0);
+      }
+    }
+  }
+
+  TextEditorState? undo() {
+    if (undoStack.length > 1) {
+      _isApplyingUndoRedo = true;
+
+      // Pop current state to redoStack
+      TextEditorState last = undoStack.removeLast();
+      redoStack.add(last);
+
+      // Return previous state
+      TextEditorState previous = undoStack.last;
+
+      _isApplyingUndoRedo = false;
+      return previous;
+    }
+    return null;
+  }
+
+  TextEditorState? redo() {
+    if (redoStack.isNotEmpty) {
+      _isApplyingUndoRedo = true;
+
+      // Pop from redoStack
+      TextEditorState next = redoStack.removeLast();
+      undoStack.add(next);
+
+      _isApplyingUndoRedo = false;
+      return next;
+    }
+    return null;
+  }
+
+  void clearUndoRedo() {
+    undoStack.clear();
+    redoStack.clear();
+  }
+
+  bool _areStatesEqual(TextEditorState a, TextEditorState b) {
+    return a.content == b.content &&
+        a.fontSize == b.fontSize &&
+        a.isBold == b.isBold &&
+        a.isItalic == b.isItalic &&
+        a.textAlign == b.textAlign;
   }
 }

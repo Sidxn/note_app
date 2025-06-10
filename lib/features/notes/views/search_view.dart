@@ -55,7 +55,7 @@ class NotesSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final note = filteredNotes[index];
         return InkWell(
-          onTap: () => Get.to(() => AddNoteView(noteToEdit: note)),
+          onTap: () => Get.to(() => AddNoteView()),
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.all(16),
