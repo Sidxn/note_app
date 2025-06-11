@@ -1,4 +1,5 @@
 import 'package:app_note/features/notes/controllers/note_controller.dart';
+import 'package:app_note/features/notes/controllers/theme_controller.dart';
 import 'package:app_note/features/notes/models/note.dart';
 import 'package:app_note/shared/theme/theme.dart';
 import 'package:app_note/features/notes/views/home_view.dart';
@@ -11,7 +12,7 @@ void main() async {
 
   // Initialize Hive
   await Hive.initFlutter();
-
+ Get.put(ThemeController());
   // Register adapters
   Hive.registerAdapter(NoteAdapter()); // Replace with your adapter class
 
@@ -26,7 +27,8 @@ void main() async {
 
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  
+  final ThemeController themeController = Get.find();
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +37,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme, 
    
-      themeMode: ThemeMode.system, // Or ThemeMode.light / dark
+       themeMode: themeController.themeMode.value, // Or ThemeMode.light / dark
       home:  NotesHomePage(),
       debugShowCheckedModeBanner: false,
     );

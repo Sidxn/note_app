@@ -1,11 +1,13 @@
-import 'dart:async'; // ADD THIS LINE
-import 'package:app_note/features/notes/models/text_model.dart';
-import 'package:app_note/shared/theme/colorScheme.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:uuid/uuid.dart';
+
 import '../controllers/note_controller.dart';
 import '../models/note.dart';
+import '../models/text_model.dart';
+import 'package:app_note/shared/theme/colorScheme.dart';
 
 class AddNoteView extends StatefulWidget {
   final Note? noteToEdit;
@@ -18,7 +20,6 @@ class AddNoteView extends StatefulWidget {
 
 class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStateMixin {
   final NoteController noteController = Get.find<NoteController>();
-
   final TextEditingController titleController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
 
@@ -28,10 +29,9 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
   TextAlign textAlign = TextAlign.start;
   bool isPinned = false;
 
+  Timer? _debounceTimer;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-
-  Timer? _debounceTimer; // ADD THIS FIELD
 
   @override
   void initState() {
@@ -53,69 +53,62 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
     _pushEditorStateToUndo();
 
     contentController.addListener(() {
-      if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
-
-      _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-        _pushEditorStateToUndo();
-      });
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(const Duration(milliseconds: 500), _pushEditorStateToUndo);
     });
 
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    );
-
+    _fadeAnimation = CurvedAnimation(parent: _animationController, curve: Curves.easeInOut);
     _animationController.forward();
   }
 
   @override
   void dispose() {
-    _debounceTimer?.cancel(); // ADD THIS LINE
-    contentController.dispose();
+    _debounceTimer?.cancel();
     titleController.dispose();
+    contentController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isSmallScreen = MediaQuery.of(context).size.width < 360;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        backgroundColor: context.theme.scaffoldBackgroundColor,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textDark),
         title: Text(
           widget.noteToEdit == null ? 'New Note' : 'Edit Note',
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontFamily: 'Urbanist'),
-        ),
-        centerTitle: false,
-        elevation: 0,
-        backgroundColor: AppColors.background,
-        iconTheme: const IconThemeData(color: AppColors.textDark),
-        actions: [
-           if (widget.noteToEdit == null)
-          IconButton(
-            icon: Icon(
-              isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-              color: isPinned ? AppColors.primaryBlue : AppColors.textGray,
-            ),
-            onPressed: () {
-              setState(() {
-                isPinned = !isPinned;
-              });
-            },
+          style: TextStyle(
+            color: Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textDark,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Urbanist',
+            fontSize: isSmallScreen ? 18 : 20,
           ),
-          
+        ),
+        actions: [
+          if (widget.noteToEdit == null)
+            IconButton(
+              icon: Icon(
+                isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                color: isPinned ? AppColors.primaryBlue : Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textGray,
+              ),
+              onPressed: () => setState(() => isPinned = !isPinned),
+            ),
           if (widget.noteToEdit != null)
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.redAccent),
               onPressed: _deleteNote,
             ),
           IconButton(
-            icon: const Icon(Icons.check, color: AppColors.primaryBlue),
+            icon: Icon(Icons.check, color: AppColors.primaryBlue),
             onPressed: _saveNote,
           ),
         ],
@@ -133,20 +126,21 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
                   children: [
                     TextField(
                       controller: titleController,
-                      style: const TextStyle(
-                        fontSize: 26,
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 22 : 26,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textDark,
                         fontFamily: 'Urbanist',
                       ),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Title',
                         hintStyle: TextStyle(
-                          color: AppColors.textGray,
+                          color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textGray,
                           fontWeight: FontWeight.w600,
-                          fontSize: 26,
+                          fontSize: isSmallScreen ? 22 : 26,
                         ),
                         border: InputBorder.none,
+                        focusColor: AppColors.scaffoldDark,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -163,11 +157,11 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
                           color: AppColors.textDark,
                           fontFamily: 'Urbanist',
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Start typing...',
                           hintStyle: TextStyle(
-                            color: AppColors.textGray,
-                            fontSize: 16,
+                            color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textGray,
+                            fontSize: fontSize,
                           ),
                           border: InputBorder.none,
                         ),
@@ -184,161 +178,128 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
     );
   }
 
+  // Only the relevant updates are shown for brevity and clarity.
 
-  Widget _buildCustomizationBar() {
-    double screenWidth = MediaQuery.of(context).size.width;
+Widget _buildCustomizationBar() {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    double iconSize = screenWidth < 360
-        ? 18
-        : screenWidth < 400
-            ? 20
-            : 22;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      height: 50,
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _buildToolbarButton(
-              icon: Icons.undo,
-              enabled: noteController.undoStack.length > 1,
-              onTap: () {
-                TextEditorState? previous = noteController.undo();
-                if (previous != null) {
-                  setState(() {
-                    contentController.text = previous.content;
-                    contentController.selection = TextSelection.collapsed(offset: previous.content.length);
-                    fontSize = previous.fontSize;
-                    isBold = previous.isBold;
-                    isItalic = previous.isItalic;
-                    textAlign = previous.textAlign;
-                  });
-                }
-              },
-              iconSize: iconSize,
-            ),
-            _buildToolbarButton(
-              icon: Icons.redo,
-              enabled: noteController.redoStack.isNotEmpty,
-              onTap: () {
-                TextEditorState? next = noteController.redo();
-                if (next != null) {
-                  setState(() {
-                    contentController.text = next.content;
-                    contentController.selection = TextSelection.collapsed(offset: next.content.length);
-                    fontSize = next.fontSize;
-                    isBold = next.isBold;
-                    isItalic = next.isItalic;
-                    textAlign = next.textAlign;
-                  });
-                }
-              },
-              iconSize: iconSize,
-            ),
-            _buildToggleButton(Icons.format_bold, isBold, () {
-              setState(() {
-                isBold = !isBold;
-                _pushEditorStateToUndo();
-              });
-            }, iconSize),
-            _buildToggleButton(Icons.format_italic, isItalic, () {
-              setState(() {
-                isItalic = !isItalic;
-                _pushEditorStateToUndo();
-              });
-            }, iconSize),
-            _buildToggleButton(Icons.format_align_left, textAlign == TextAlign.start, () {
-              setState(() {
-                textAlign = TextAlign.start;
-                _pushEditorStateToUndo();
-              });
-            }, iconSize),
-            _buildToggleButton(Icons.format_align_center, textAlign == TextAlign.center, () {
-              setState(() {
-                textAlign = TextAlign.center;
-                _pushEditorStateToUndo();
-              });
-            }, iconSize),
-            _buildToggleButton(Icons.format_align_right, textAlign == TextAlign.end, () {
-              setState(() {
-                textAlign = TextAlign.end;
-                _pushEditorStateToUndo();
-              });
-            }, iconSize),
-            SizedBox(
-              width: 50,
-              child: DropdownButton<double>(
-                value: fontSize,
-                isDense: true,
-                isExpanded: false,
-                underline: const SizedBox(),
-                dropdownColor: AppColors.white,
-                style: const TextStyle(
-                  fontFamily: 'Urbanist',
-                  fontSize: 14,
-                  color: AppColors.textDark,
-                ),
-                items: [14, 16, 18, 20, 22]
-                    .map((size) => DropdownMenuItem(value: size.toDouble(), child: Text(size.toString())))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    fontSize = value!;
-                    _pushEditorStateToUndo();
-                  });
-                },
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    height: 50,
+    decoration: BoxDecoration(
+      color: isDark ? AppColors.darkSurface : AppColors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: isDark
+          ? []
+          : [
+              BoxShadow(
+                color: AppColors.shadow.withOpacity(0.05),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
               ),
+            ],
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildBarIcon(Icons.undo, enabled: noteController.undoStack.length > 1, onPressed: _handleUndo),
+        _buildBarIcon(Icons.redo, enabled: noteController.redoStack.isNotEmpty, onPressed: _handleRedo),
+        _buildBarIcon(Icons.format_bold, selected: isBold, onPressed: () {
+          setState(() => isBold = !isBold);
+          _pushEditorStateToUndo();
+        }),
+        _buildBarIcon(Icons.format_italic, selected: isItalic, onPressed: () {
+          setState(() => isItalic = !isItalic);
+          _pushEditorStateToUndo();
+        }),
+        DropdownButtonHideUnderline(
+          child: DropdownButton<double>(
+            value: fontSize,
+            icon: const Icon(Icons.arrow_drop_down, size: 0),
+            style: TextStyle(
+              fontFamily: 'Urbanist',
+              fontSize: 16,
+              color: AppColors.textDark,
             ),
-          ],
+            dropdownColor: isDark ? AppColors.surfaceDark : AppColors.white,
+            isDense: true,
+            items: [14, 16, 18, 20, 22]
+                .map((size) => DropdownMenuItem(
+                      value: size.toDouble(),
+                      child: Text(
+                        size.toString(),
+                        style: TextStyle(color: AppColors.textDark),
+                      ),
+                    ))
+                .toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => fontSize = value);
+                _pushEditorStateToUndo();
+              }
+            },
+          ),
         ),
-      ),
-    );
+        _buildBarIcon(Icons.format_align_left, selected: textAlign == TextAlign.start, onPressed: () {
+          setState(() => textAlign = TextAlign.start);
+          _pushEditorStateToUndo();
+        }),
+        _buildBarIcon(Icons.format_align_center, selected: textAlign == TextAlign.center, onPressed: () {
+          setState(() => textAlign = TextAlign.center);
+          _pushEditorStateToUndo();
+        }),
+        _buildBarIcon(Icons.format_align_right, selected: textAlign == TextAlign.end, onPressed: () {
+          setState(() => textAlign = TextAlign.end);
+          _pushEditorStateToUndo();
+        }),
+      ],
+    ),
+  );
+}
+
+
+Widget _buildBarIcon(IconData icon,
+    {bool selected = false, bool enabled = true, required VoidCallback onPressed}) {
+  return IconButton(
+    icon: Icon(
+      icon,
+      size: 22,
+      color: enabled
+          ? (selected ? AppColors.primaryBlue : AppColors.textDark)
+          : AppColors.textGray.withOpacity(0.3),
+    ),
+    onPressed: enabled ? onPressed : null,
+  );
+}
+
+
+  void _handleUndo() {
+    final previous = noteController.undo();
+    if (previous != null) {
+      setState(() {
+        contentController.text = previous.content;
+        contentController.selection = TextSelection.collapsed(offset: previous.content.length);
+        fontSize = previous.fontSize;
+        isBold = previous.isBold;
+        isItalic = previous.isItalic;
+        textAlign = previous.textAlign;
+      });
+    }
   }
 
-  Widget _buildToolbarButton({
-    required IconData icon,
-    required bool enabled,
-    required VoidCallback onTap,
-    required double iconSize,
-  }) {
-    return IconButton(
-      icon: Icon(
-        icon,
-        color: enabled ? AppColors.primaryBlue : AppColors.textGray,
-        size: iconSize,
-      ),
-      onPressed: enabled ? onTap : null,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
-    );
-  }
-
-  Widget _buildToggleButton(IconData icon, bool selected, VoidCallback onPressed, double iconSize) {
-    return IconButton(
-      icon: Icon(
-        icon,
-        color: selected ? AppColors.primaryBlue : AppColors.textGray,
-        size: iconSize,
-      ),
-      onPressed: onPressed,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
-    );
+  void _handleRedo() {
+    final next = noteController.redo();
+    if (next != null) {
+      setState(() {
+        contentController.text = next.content;
+        contentController.selection = TextSelection.collapsed(offset: next.content.length);
+        fontSize = next.fontSize;
+        isBold = next.isBold;
+        isItalic = next.isItalic;
+        textAlign = next.textAlign;
+      });
+    }
   }
 
   void _saveNote() {
@@ -350,34 +311,31 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
       return;
     }
 
+    final note = Note(
+      id: widget.noteToEdit?.id ?? const Uuid().v4(),
+      title: title,
+      content: content,
+      createdAt: widget.noteToEdit?.createdAt ?? DateTime.now(),
+      isPinned: isPinned,
+      fontSize: fontSize,
+      isBold: isBold,
+      isItalic: isItalic,
+      textAlignIndex: _getTextAlignIndex(textAlign),
+    );
+
     if (widget.noteToEdit == null) {
-      final note = Note(
-        id: const Uuid().v4(),
-        title: title,
-        content: content,
-        createdAt: DateTime.now(),
-        isPinned: isPinned,
-        fontSize: fontSize,
-        isBold: isBold,
-        isItalic: isItalic,
-        textAlignIndex: _getTextAlignIndex(textAlign),
-      );
       noteController.addNote(note);
     } else {
-  noteController.updateNote(
-  widget.noteToEdit!.id,
-  title,
-  content,
-  isPinned: isPinned,
-  fontSize: fontSize,
-  isBold: isBold,
-  isItalic: isItalic,
-  textAlignIndex: _getTextAlignIndex(textAlign),
-);
-
+      noteController.updateNote(note.id, note.title, note.content,
+        isPinned: note.isPinned,
+        fontSize: note.fontSize,
+        isBold: note.isBold,
+        isItalic: note.isItalic,
+        textAlignIndex: note.textAlignIndex,
+      );
     }
 
-    Navigator.pop(context);
+    Get.back();
   }
 
   void _deleteNote() {
@@ -387,31 +345,19 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
     }
   }
 
-  int _getTextAlignIndex(TextAlign align) {
-    switch (align) {
-      case TextAlign.start:
-        return 0;
-      case TextAlign.center:
-        return 1;
-      case TextAlign.end:
-        return 2;
-      default:
-        return 0;
-    }
-  }
+  int _getTextAlignIndex(TextAlign align) => switch (align) {
+    TextAlign.start => 0,
+    TextAlign.center => 1,
+    TextAlign.end => 2,
+    _ => 0,
+  };
 
-  TextAlign _getTextAlignFromIndex(int index) {
-    switch (index) {
-      case 0:
-        return TextAlign.start;
-      case 1:
-        return TextAlign.center;
-      case 2:
-        return TextAlign.end;
-      default:
-        return TextAlign.start;
-    }
-  }
+  TextAlign _getTextAlignFromIndex(int index) => switch (index) {
+    0 => TextAlign.start,
+    1 => TextAlign.center,
+    2 => TextAlign.end,
+    _ => TextAlign.start,
+  };
 
   void _pushEditorStateToUndo() {
     noteController.pushToUndoStack(
@@ -424,4 +370,4 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
       ),
     );
   }
-} 
+}

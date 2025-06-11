@@ -2,6 +2,7 @@ import 'package:app_note/features/notes/models/note.dart';
 import 'package:app_note/shared/theme/colorScheme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import '../controllers/note_controller.dart';
 
 class NoteCard extends StatelessWidget {
@@ -34,7 +35,7 @@ class NoteCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? AppColors.primaryBlue.withOpacity(0.1)
-                : AppColors.lightCard,
+                : Theme.of(context).cardColor,
             border: Border.all(
               color: isSelected ? AppColors.primaryBlue : Colors.transparent,
               width: 2,
@@ -44,10 +45,11 @@ class NoteCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top row with title (and check if selected) + pin icon
+              // Title + check icon + pin icon
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Title & selection check
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,34 +72,41 @@ class NoteCard extends StatelessWidget {
                                   .textTheme
                                   .titleMedium
                                   ?.copyWith(
-                                    color: AppColors.textDark,
+                                    color: Theme.of(context).textTheme.bodyLarge?.color,
                                     fontWeight: FontWeight.w600,
                                   ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              
                             ),
                           ),
                       ],
                     ),
                   ),
-                  GestureDetector(
+                  // Pin icon
+                  InkWell(
                     onTap: onPinToggle,
-                    child: Icon(
-                      note.isPinned
-                          ? Icons.push_pin
-                          : Icons.push_pin_outlined,
-                      size: 20,
-                      color: AppColors.primaryBlue,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Icon(
+                        note.isPinned
+                            ? Icons.push_pin
+                            : Icons.push_pin_outlined,
+                        size: 20,
+                        color: AppColors.primaryBlue,
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
+              // Note content
               if (note.content.isNotEmpty)
                 Text(
                   note.content,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textGray,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
                         fontWeight: FontWeight.w400,
                       ),
                   maxLines: 5,
