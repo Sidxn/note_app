@@ -12,6 +12,32 @@ class NoteController extends GetxController {
 
   late final Box<Note> _noteBox;
 
+Rx<DateTime?> selectedDate = Rx<DateTime?>(null);
+final RxBool isCalendarVisible = false.obs;
+
+void toggleCalendarVisibility() {
+  isCalendarVisible.value = !isCalendarVisible.value;
+}
+
+void selectDate(DateTime date) {
+  selectedDate.value = date;
+  isCalendarVisible.value = false; // auto-close
+}
+
+
+List<Note> get filteredNotesByDate {
+  if (selectedDate.value == null) return notes;
+  return notes.where((note) =>
+      note.createdAt.year == selectedDate.value!.year &&
+      note.createdAt.month == selectedDate.value!.month &&
+      note.createdAt.day == selectedDate.value!.day).toList();
+}
+
+void clearDateFilter() {
+  selectedDate.value = null;
+}
+
+
   // ─── Undo / Redo Stack ────────────────────────────────────────────────────────
   var undoStack = <TextEditorState>[].obs;
   var redoStack = <TextEditorState>[].obs;

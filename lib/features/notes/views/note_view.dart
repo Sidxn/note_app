@@ -89,13 +89,14 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
       appBar: AppBar(
         title: Text(
           widget.noteToEdit == null ? 'New Note' : 'Edit Note',
-          style: const TextStyle(color: AppColors.primaryBlue),
+          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontFamily: 'Urbanist'),
         ),
-        centerTitle: true,
+        centerTitle: false,
         elevation: 0,
         backgroundColor: AppColors.background,
         iconTheme: const IconThemeData(color: AppColors.textDark),
         actions: [
+           if (widget.noteToEdit == null)
           IconButton(
             icon: Icon(
               isPinned ? Icons.push_pin : Icons.push_pin_outlined,
@@ -107,6 +108,7 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
               });
             },
           ),
+          
           if (widget.noteToEdit != null)
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.redAccent),
@@ -381,7 +383,7 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
   void _deleteNote() {
     if (widget.noteToEdit != null) {
       noteController.deleteNoteById(widget.noteToEdit!.id);
-      Navigator.pop(context);
+      Get.back(result: 'deleted');
     }
   }
 
