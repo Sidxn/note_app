@@ -220,7 +220,7 @@ Widget _buildCustomizationBar() {
             style: TextStyle(
               fontFamily: 'Urbanist',
               fontSize: 16,
-              color: AppColors.textDark,
+              color: isDark ? AppColors.textDark : AppColors.white,
             ),
             dropdownColor: isDark ? AppColors.surfaceDark : AppColors.white,
             isDense: true,
@@ -266,8 +266,8 @@ Widget _buildBarIcon(IconData icon,
       icon,
       size: 22,
       color: enabled
-          ? (selected ? AppColors.primaryBlue : AppColors.textDark)
-          : AppColors.textGray.withOpacity(0.3),
+          ? (selected ? AppColors.primaryBlue : Theme.of(context).textTheme.bodyLarge?.color ?? TextStyle(color: AppColors.textDark).color)
+          : AppColors.textGray.withOpacity(0.6),
     ),
     onPressed: enabled ? onPressed : null,
   );
