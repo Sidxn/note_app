@@ -1,13 +1,15 @@
 import 'dart:async';
+import 'package:app_note/features/notes/widgets/customization_bar.dart';
+
+import 'package:app_note/features/notes/widgets/note_content_field.dart';
+import 'package:app_note/features/notes/widgets/note_title_field.dart.dart';
+import 'package:app_note/shared/theme/colorScheme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:uuid/uuid.dart';
-
 import '../controllers/note_controller.dart';
 import '../models/note.dart';
 import '../models/text_model.dart';
-import 'package:app_note/shared/theme/colorScheme.dart';
 
 class AddNoteView extends StatefulWidget {
   final Note? noteToEdit;
@@ -30,8 +32,8 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
   bool isPinned = false;
 
   Timer? _debounceTimer;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+  late final AnimationController _animationController;
+  late final Animation<double> _fadeAnimation;
 
   @override
   void initState() {
@@ -80,199 +82,93 @@ class _AddNoteViewState extends State<AddNoteView> with SingleTickerProviderStat
 
     return Scaffold(
       backgroundColor: context.theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: context.theme.scaffoldBackgroundColor,
-        elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textDark),
-        title: Text(
-          widget.noteToEdit == null ? 'New Note' : 'Edit Note',
-          style: TextStyle(
-            color: Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textDark,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Urbanist',
-            fontSize: isSmallScreen ? 18 : 20,
-          ),
-        ),
-        actions: [
-          if (widget.noteToEdit == null)
-            IconButton(
-              icon: Icon(
-                isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                color: isPinned ? AppColors.primaryBlue : Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textGray,
-              ),
-              onPressed: () => setState(() => isPinned = !isPinned),
-            ),
-          if (widget.noteToEdit != null)
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.redAccent),
-              onPressed: _deleteNote,
-            ),
-          IconButton(
-            icon: Icon(Icons.check, color: AppColors.primaryBlue),
-            onPressed: _saveNote,
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(context, isSmallScreen),
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: Column(
           children: [
-            _buildCustomizationBar(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: CustomizationBar(
+                fontSize: fontSize,
+                isBold: isBold,
+                isItalic: isItalic,
+                textAlign: textAlign,
+                onFontSizeChanged: (value) => setState(() => fontSize = value),
+                onBoldToggled: () => setState(() => isBold = !isBold),
+                onItalicToggled: () => setState(() => isItalic = !isItalic),
+                onAlignChanged: (align) => setState(() => textAlign = align),
+                onUndo: _handleUndo,
+                onRedo: _handleRedo,
+                noteController: noteController,
+                pushUndo: _pushEditorStateToUndo,
+              ),
+            ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextField(
-                      controller: titleController,
-                      style: TextStyle(
-                        fontSize: isSmallScreen ? 22 : 26,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textDark,
-                        fontFamily: 'Urbanist',
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Title',
-                        hintStyle: TextStyle(
-                          color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textGray,
-                          fontWeight: FontWeight.w600,
-                          fontSize: isSmallScreen ? 22 : 26,
-                        ),
-                        border: InputBorder.none,
-                        focusColor: AppColors.scaffoldDark,
-                      ),
-                    ),
+                    NoteTitleField(controller: titleController),
                     const SizedBox(height: 12),
                     Expanded(
-                      child: TextField(
+                      child: NoteContentField(
                         controller: contentController,
-                        maxLines: null,
-                        expands: true,
+                        fontSize: fontSize,
+                        isBold: isBold,
+                        isItalic: isItalic,
                         textAlign: textAlign,
-                        style: TextStyle(
-                          fontSize: fontSize,
-                          fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-                          fontStyle: isItalic ? FontStyle.italic : FontStyle.normal,
-                          color: AppColors.textDark,
-                          fontFamily: 'Urbanist',
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Start typing...',
-                          hintStyle: TextStyle(
-                            color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textGray,
-                            fontSize: fontSize,
-                          ),
-                          border: InputBorder.none,
-                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
 
-  // Only the relevant updates are shown for brevity and clarity.
+  AppBar _buildAppBar(BuildContext context, bool isSmallScreen) {
+    final isEditing = widget.noteToEdit != null;
+    final textColor = Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textDark;
 
-Widget _buildCustomizationBar() {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8),
-    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    height: 50,
-    decoration: BoxDecoration(
-      color: isDark ? AppColors.darkSurface : AppColors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: isDark
-          ? []
-          : [
-              BoxShadow(
-                color: AppColors.shadow.withOpacity(0.05),
-                blurRadius: 5,
-                offset: const Offset(0, 2),
-              ),
-            ],
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildBarIcon(Icons.undo, enabled: noteController.undoStack.length > 1, onPressed: _handleUndo),
-        _buildBarIcon(Icons.redo, enabled: noteController.redoStack.isNotEmpty, onPressed: _handleRedo),
-        _buildBarIcon(Icons.format_bold, selected: isBold, onPressed: () {
-          setState(() => isBold = !isBold);
-          _pushEditorStateToUndo();
-        }),
-        _buildBarIcon(Icons.format_italic, selected: isItalic, onPressed: () {
-          setState(() => isItalic = !isItalic);
-          _pushEditorStateToUndo();
-        }),
-        DropdownButtonHideUnderline(
-          child: DropdownButton<double>(
-            value: fontSize,
-            icon: const Icon(Icons.arrow_drop_down, size: 0),
-            style: TextStyle(
-              fontFamily: 'Urbanist',
-              fontSize: 16,
-              color: isDark ? AppColors.textDark : AppColors.white,
-            ),
-            dropdownColor: isDark ? AppColors.surfaceDark : AppColors.white,
-            isDense: true,
-            items: [14, 16, 18, 20, 22]
-                .map((size) => DropdownMenuItem(
-                      value: size.toDouble(),
-                      child: Text(
-                        size.toString(),
-                        style: TextStyle(color: AppColors.textDark),
-                      ),
-                    ))
-                .toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() => fontSize = value);
-                _pushEditorStateToUndo();
-              }
-            },
-          ),
+    return AppBar(
+      backgroundColor: context.theme.scaffoldBackgroundColor,
+      elevation: 0,
+      iconTheme: IconThemeData(color: textColor),
+      title: Text(
+        isEditing ? 'Edit Note' : 'New Note',
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Urbanist',
+          fontSize: isSmallScreen ? 18 : 20,
         ),
-        _buildBarIcon(Icons.format_align_left, selected: textAlign == TextAlign.start, onPressed: () {
-          setState(() => textAlign = TextAlign.start);
-          _pushEditorStateToUndo();
-        }),
-        _buildBarIcon(Icons.format_align_center, selected: textAlign == TextAlign.center, onPressed: () {
-          setState(() => textAlign = TextAlign.center);
-          _pushEditorStateToUndo();
-        }),
-        _buildBarIcon(Icons.format_align_right, selected: textAlign == TextAlign.end, onPressed: () {
-          setState(() => textAlign = TextAlign.end);
-          _pushEditorStateToUndo();
-        }),
+      ),
+      actions: [
+        if (!isEditing)
+          IconButton(
+            icon: Icon(
+              isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+              color: isPinned ? AppColors.primaryBlue : AppColors.textGray,
+            ),
+            onPressed: () => setState(() => isPinned = !isPinned),
+          ),
+        if (isEditing)
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.redAccent),
+            onPressed: _deleteNote,
+          ),
+        IconButton(
+          icon: Icon(Icons.check, color: AppColors.primaryBlue),
+          onPressed: _saveNote,
+        ),
       ],
-    ),
-  );
-}
-
-
-Widget _buildBarIcon(IconData icon,
-    {bool selected = false, bool enabled = true, required VoidCallback onPressed}) {
-  return IconButton(
-    icon: Icon(
-      icon,
-      size: 22,
-      color: enabled
-          ? (selected ? AppColors.primaryBlue : Theme.of(context).textTheme.bodyLarge?.color ?? TextStyle(color: AppColors.textDark).color)
-          : AppColors.textGray.withOpacity(0.6),
-    ),
-    onPressed: enabled ? onPressed : null,
-  );
-}
-
+    );
+  }
 
   void _handleUndo() {
     final previous = noteController.undo();
@@ -326,7 +222,10 @@ Widget _buildBarIcon(IconData icon,
     if (widget.noteToEdit == null) {
       noteController.addNote(note);
     } else {
-      noteController.updateNote(note.id, note.title, note.content,
+      noteController.updateNote(
+        note.id,
+        note.title,
+        note.content,
         isPinned: note.isPinned,
         fontSize: note.fontSize,
         isBold: note.isBold,
@@ -339,8 +238,9 @@ Widget _buildBarIcon(IconData icon,
   }
 
   void _deleteNote() {
-    if (widget.noteToEdit != null) {
-      noteController.deleteNoteById(widget.noteToEdit!.id);
+    final note = widget.noteToEdit;
+    if (note != null) {
+      noteController.deleteNoteById(note.id);
       Get.back(result: 'deleted');
     }
   }

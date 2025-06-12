@@ -4,8 +4,7 @@ import 'package:app_note/features/notes/models/note.dart';
 import 'package:app_note/features/notes/views/note_view.dart';
 import 'package:app_note/features/notes/views/preview_screen_view.dart';
 import 'package:app_note/features/notes/widgets/appheader.dart';
-import 'package:app_note/features/notes/widgets/notecard.dart' hide AddNoteView;
-
+import 'package:app_note/features/notes/widgets/notecard.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -21,39 +20,34 @@ class NotesHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final horizontalPadding = screenWidth * 0.04;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Obx(() => AppBar(
-              backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+              backgroundColor: noteController.isSelectionMode.value
+                  ? Theme.of(context).colorScheme.surface.withOpacity(0.95)
+                  : Theme.of(context).appBarTheme.backgroundColor,
               elevation: 0,
               leading: noteController.isSelectionMode.value
                   ? IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: noteController.clearSelection,
-                      color: Theme.of(context).iconTheme.color,
+                      color: Theme.of(context).colorScheme.onSurface,
                     )
                   : null,
-              title: noteController.isSelectionMode.value
-                  ? Text(
-                      '${noteController.selectedNotes.length} selected',
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.045,
-                        color: Theme.of(context).textTheme.titleLarge!.color,
-                      ),
-                    )
-                  : Text(
-                      'My Notes',
-                      style: TextStyle(
-                        color: Theme.of(context).textTheme.titleLarge!.color,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Urbanist',
-                        fontSize: screenWidth * 0.055,
-                      ),
-                    ),
+              title: Text(
+                noteController.isSelectionMode.value
+                    ? '${noteController.selectedNotes.length} selected'
+                    : 'My Notes',
+                style: TextStyle(
+                  fontSize: screenWidth * 0.05,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Urbanist',
+                ),
+              ),
               centerTitle: false,
               actions: noteController.isSelectionMode.value
                   ? [
@@ -67,14 +61,14 @@ class NotesHomePage extends StatelessWidget {
                             noteController.selectAll();
                           }
                         },
-                        color: Theme.of(context).iconTheme.color,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete),
                         onPressed: () async {
                           await noteController.deleteSelectedNotes();
                         },
-                        color: Theme.of(context).iconTheme.color,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ]
                   : [
@@ -83,14 +77,14 @@ class NotesHomePage extends StatelessWidget {
                           noteController.isGrid.value
                               ? Icons.grid_view_rounded
                               : Icons.view_agenda,
-                          color: Theme.of(context).iconTheme.color,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         onPressed: noteController.toggleViewMode,
                       ),
                       IconButton(
                         icon: const Icon(Icons.calendar_today),
                         onPressed: noteController.toggleCalendarVisibility,
-                        color: Theme.of(context).iconTheme.color,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       Obx(() {
                         return noteController.selectedDate.value != null
@@ -98,7 +92,7 @@ class NotesHomePage extends StatelessWidget {
                                 icon: const Icon(Icons.clear),
                                 tooltip: 'Show all notes',
                                 onPressed: noteController.clearDateFilter,
-                                color: Theme.of(context).iconTheme.color,
+                                color: Theme.of(context).colorScheme.onSurface,
                               )
                             : const SizedBox.shrink();
                       }),
@@ -107,9 +101,11 @@ class NotesHomePage extends StatelessWidget {
                           themeController.isDarkMode
                               ? Icons.light_mode
                               : Icons.dark_mode,
-                          color: Theme.of(context).iconTheme.color,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        tooltip: 'Toggle Theme',
+                        tooltip: themeController.isDarkMode
+                            ? 'Switch to Light Mode'
+                            : 'Switch to Dark Mode',
                         onPressed: () => themeController.toggleTheme(),
                       ),
                     ],
@@ -117,7 +113,7 @@ class NotesHomePage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Get.to(() => AddNoteView());
+          Get.to(() => const AddNoteView());
         },
         backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(Icons.add, color: Colors.white),
@@ -151,11 +147,13 @@ class NotesHomePage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(screenWidth * 0.04),
                     borderSide: BorderSide.none,
                   ),
-                  fillColor: Theme.of(context).cardColor,
+                  fillColor: Theme.of(context).colorScheme.surface,
                   filled: true,
                 ),
                 onChanged: (value) => searchQuery.value = value,
-                style: TextStyle(color: Theme.of(context).textTheme.bodyLarge!.color),
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyLarge!.color,
+                ),
               ),
               const SizedBox(height: 16),
               Obx(() => AnimatedSize(
@@ -164,12 +162,26 @@ class NotesHomePage extends StatelessWidget {
                     child: noteController.isCalendarVisible.value
                         ? Column(
                             children: [
-                              CalendarDatePicker(
-                                initialDate: noteController.selectedDate.value ??
-                                    DateTime.now(),
-                                firstDate: DateTime(2000),
-                                lastDate: DateTime.now(),
-                                onDateChanged: noteController.selectDate,
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Theme(
+  data: Theme.of(context).copyWith(
+    colorScheme: Theme.of(context).colorScheme.copyWith(
+      primary: Theme.of(context).colorScheme.primary, // today’s date circle color
+      onPrimary:  Theme.of(context).textTheme.bodyLarge!.color    , // today’s date text color when selected
+      onSurface: Theme.of(context).colorScheme.onSurface, // default text color
+    ),
+  ),
+  child: CalendarDatePicker(
+    initialDate: noteController.selectedDate.value ?? DateTime.now(),
+    firstDate: DateTime(2000),
+    lastDate: DateTime.now(),
+    onDateChanged: noteController.selectDate,
+  ),
+),
                               ),
                               const SizedBox(height: 8),
                             ],

@@ -2,7 +2,7 @@ import 'package:app_note/features/notes/models/note.dart';
 import 'package:app_note/shared/theme/colorScheme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
+
 import '../controllers/note_controller.dart';
 
 class NoteCard extends StatelessWidget {

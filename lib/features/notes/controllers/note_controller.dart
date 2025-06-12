@@ -39,9 +39,13 @@ void clearDateFilter() {
 
 
   // ─── Undo / Redo Stack ────────────────────────────────────────────────────────
-  var undoStack = <TextEditorState>[].obs;
-  var redoStack = <TextEditorState>[].obs;
-  bool _isApplyingUndoRedo = false;
+// ─── Undo / Redo Stack ────────────────────────────────────────────────────────
+var undoStack = <TextEditorState>[].obs;
+var redoStack = <TextEditorState>[].obs;
+bool _isApplyingUndoRedo = false;
+
+bool get canUndo => undoStack.length > 1;
+bool get canRedo => redoStack.isNotEmpty;
 
   @override
   void onInit() {

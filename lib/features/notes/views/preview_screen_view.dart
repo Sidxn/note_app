@@ -24,9 +24,9 @@ class NotePreviewScreen extends StatelessWidget {
         elevation: 0,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
     
-        title: const Text(
+        title:  Text(
           'Preview',
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontFamily: 'Urbanist'),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textDark, fontWeight: FontWeight.bold, fontFamily: 'Urbanist'),
         ),
         centerTitle: false,
         actions: [
